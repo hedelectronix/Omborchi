@@ -102,6 +102,30 @@ body.dark{color-scheme:dark}
 .gl{position:fixed;inset:0;z-index:9990;background:var(--bg);display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:20px}.gl.on{display:flex}.gl h2{margin:0;font-size:20px}.gl p{margin:0;color:var(--mut);font-size:14px;text-align:center}
 header,nav,main{padding-left:max(16px,env(safe-area-inset-left,0px))!important;padding-right:max(16px,env(safe-area-inset-right,0px))!important}
 @media(max-width:700px){nav button{font-size:10px}}
+
+@media(min-width:900px){
+ body{font-size:16px}
+ header{padding:10px 32px!important;gap:8px 14px!important}
+ header h1{font-size:20px!important}
+ header .clk{font-size:14px!important}
+ header button{min-height:36px!important;padding:5px 14px!important;font-size:14px!important}
+ header,nav,main{padding-left:max(32px,env(safe-area-inset-left,0px))!important;padding-right:max(32px,env(safe-area-inset-right,0px))!important}
+ main{max-width:1280px!important;padding-top:24px!important;padding-bottom:40px!important}
+ .home{grid-template-columns:repeat(3,1fr);gap:16px}
+ .tile{min-height:150px;transition:transform .12s,box-shadow .12s}
+ .tile:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(0,0,0,.12);border-color:var(--ac)}
+ .tile.big{min-height:170px}
+ .tile b{font-size:21px}.tile small{font-size:14px}
+ th,td{padding:9px 14px}
+ table.grid tr.fill td{height:44px}
+ table.grid input.xg{min-height:46px}
+ .stats{grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+ .stats b{font-size:26px}
+ .modal .box{max-width:460px}
+ .toast{bottom:32px!important}
+ tbody tr:hover td{background:var(--bg2)}
+}
+@media(min-width:1500px){main{max-width:1440px!important}}
 </style>
 </head><body>
 <div class="gl" id="gl"><h2>Omborchi</h2><p>Gmail orqali kiring. Shunda telefon va kompyuterda ma'lumot bir xil bo'ladi.</p><div id="glb"></div><p id="glm"></p></div>
