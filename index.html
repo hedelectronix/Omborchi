@@ -128,7 +128,7 @@ var IP={copy:'<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a
 function ic(n,z){z=z||18;return '<svg class="ic" viewBox="0 0 24 24" width="'+z+'" height="'+z+'" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+IP[n]+'</svg>'}
 var tab='home',q='',openCats={},counts={},countDate=null;
 function load(){try{var r=localStorage.getItem(KEY);if(r)S=JSON.parse(r)}catch(e){}norm()}
-function norm(){if(!S.products)S.products=[];if(!S.log)S.log=[];if(!S.pr)S.pr={t:{},done:{}};if(!S.pr.t)S.pr.t={};if(!S.pr.done)S.pr.done={};if(!S.pr.since)S.pr.since=today();if(!S.nm)S.nm={in:[],out:[]};if(!S.nm.in)S.nm.in=[];if(!S.nm.out)S.nm.out=[]}
+function norm(){if(!S.products)S.products=[];if(!S.log)S.log=[];if(!S.cats)S.cats=[];S.products.forEach(function(p){if(p.cat&&S.cats.indexOf(p.cat)<0)S.cats.push(p.cat)});if(!S.pr)S.pr={t:{},done:{}};if(!S.pr.t)S.pr.t={};if(!S.pr.done)S.pr.done={};if(!S.pr.since)S.pr.since=today();if(!S.nm)S.nm={in:[],out:[]};if(!S.nm.in)S.nm.in=[];if(!S.nm.out)S.nm.out=[]}
 function save(){S.upd=Date.now();try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}schedSync()}
 var syncT=null,syncInfo='';
 var DEF_URL='https://script.google.com/macros/s/AKfycby5ve51vCnSf5ZXTTQ8n3rqzTJPLj3afI1Bn-qYdq_SiX1O8zJzKBJq47ZOVRkYl7VH/exec';
@@ -172,7 +172,9 @@ function viewHome(){var T={count:'Sanoq',in:'Kirim',out:'Chiqim',stock:'Qoldiq',
 var TABS=[['count','Sanoq','checksq'],['stock','Qoldiq','box'],['prod','Mahsulotlar','edit'],['pray','Namoz','moon'],['log','Tarix','clock']];
 function nav(){$('nav').style.display=tab==='home'?'none':'';$('nav').innerHTML=TABS.map(function(t){return '<button data-t="'+t[0]+'" class="'+(tab===t[0]?'on':'')+'"><span class="ti">'+ic(t[2],22)+'</span><small>'+t[1]+'</small></button>'}).join('');
   [].forEach.call($('nav').children,function(b){b.onclick=function(){tab=b.dataset.t;render()}})}
-function cats(){var s={};S.products.forEach(function(p){s[p.cat]=1});return Object.keys(s).sort()}
+function cats(){var s={};(S.cats||[]).forEach(function(c){s[c]=1});S.products.forEach(function(p){s[p.cat]=1});return Object.keys(s).sort(function(a,b){return a.localeCompare(b)})}
+function catOpts(cur,ph){var l=cats();if(cur&&l.indexOf(cur)<0)l.push(cur);return '<option value="">'+esc(ph||'— Kategoriya tanlang —')+'</option>'+l.map(function(c){return '<option value="'+esc(c)+'"'+(c===cur?' selected':'')+'>'+esc(c)+'</option>'}).join('')}
+function setV(el,v){if(!el)return;if(el.tagName==='SELECT'&&v&&![].some.call(el.options,function(o){return o.value===v})){var o=document.createElement('option');o.value=v;o.textContent=v;el.appendChild(o)}el.value=v}
 
 function cnts(p){var seen={},r=[];S.log.filter(function(l){return l.pid===p.id&&(l.type==='Sanoq'||l.type==='Tuzatish')}).sort(function(x,y){return x.date<y.date?1:x.date>y.date?-1:y.ts-x.ts}).forEach(function(l){if(seen[l.date])return;seen[l.date]=1;r.push({d:l.date,n:l.after,t:l.ts})});return r}
 function dm(d){return d?d.slice(8,10)+'.'+d.slice(5,7):'—'}
@@ -202,38 +204,53 @@ function viewStock(){
   return h+'</table>'}
 
 function dlist(){return '<datalist id="dc">'+cats().map(function(c){return '<option value="'+esc(c)+'">'}).join('')+'</datalist>'}
-function newRowHTML(){return '<tr class="nw"><td class="mut">+</td><td><input class="g" data-c="0" list="dc" autocomplete="off" placeholder="Kategoriya (masalan: SSD)" style="width:100%"></td><td><input class="g" data-c="1" autocomplete="off" placeholder="Mahsulot nomi" style="width:100%"></td><td class="n"><input class="g cnt" data-c="2" inputmode="numeric" autocomplete="off" placeholder="Soni"></td><td></td></tr>'}
+function newRowHTML(){return '<tr class="nw"><td class="mut">+</td><td><select class="g" data-c="0" style="width:100%">'+catOpts('')+'</select></td><td><input class="g" data-c="1" autocomplete="off" placeholder="Mahsulot nomi" style="width:100%"></td><td class="n"><input class="g cnt" data-c="2" inputmode="numeric" autocomplete="off" placeholder="Soni"></td><td></td></tr>'}
+function catMgr(){var l=cats(),h='<details class="card" id="cm"'+(l.length?'':' open')+'><summary style="cursor:pointer;font-weight:600">Kategoriyalar ('+l.length+')</summary><table style="margin-top:8px"><tbody>';
+  l.forEach(function(c){var n=S.products.filter(function(p){return p.cat===c}).length;h+='<tr><td><input data-cr="'+esc(c)+'" value="'+esc(c)+'" style="width:100%"></td><td class="n mut" style="width:70px">'+n+' ta</td><td style="width:100px"><button class="dng" data-cd="'+esc(c)+'">O\'chirish</button></td></tr>'});
+  return h+'</tbody></table><div class="row" style="margin:10px 0 0"><input id="cNew" autocomplete="off" placeholder="Yangi kategoriya nomi" style="flex:1 1 160px"><button class="pri" id="cAdd">+ Qo\'shish</button></div></details>'}
+function bindCats(m){
+  function add(){var v=$('cNew').value.trim();if(!v)return;if(cats().some(function(c){return c.toLowerCase()===v.toLowerCase()})){toast('Bunday kategoriya bor');return}S.cats.push(v);save();toast('Qo\'shildi: '+v);keepOpen();render()}
+  function keepOpen(){window.__cmOpen=1}
+  $('cAdd').onclick=add;$('cNew').onkeydown=function(e){if(e.key==='Enter'){e.preventDefault();add()}};
+  [].forEach.call(m.querySelectorAll('[data-cr]'),function(i){i.onchange=function(){var old=i.dataset.cr,v=i.value.trim();if(!v||v===old){render();return}
+    if(cats().some(function(c){return c!==old&&c.toLowerCase()===v.toLowerCase()})){toast('Bunday kategoriya bor');render();return}
+    S.products.forEach(function(p){if(p.cat===old)p.cat=v});S.log.forEach(function(l){if(l.cat===old)l.cat=v});
+    S.cats=S.cats.filter(function(c){return c!==old});if(S.cats.indexOf(v)<0)S.cats.push(v);save();toast('Nomi o\'zgardi');keepOpen();render()}});
+  [].forEach.call(m.querySelectorAll('[data-cd]'),function(b){b.onclick=function(){var c=b.dataset.cd,n=S.products.filter(function(p){return p.cat===c}).length;
+    if(n){toast('«'+c+'» da '+n+' ta mahsulot bor. Avval ularni boshqa kategoriyaga o\'tkazing');return}
+    confirmBox('Rostdan o\'chirasizmi? «'+c+'» kategoriyasi olib tashlanadi.',function(){S.cats=S.cats.filter(function(x){return x!==c});save();keepOpen();render()})}});
+  if(window.__cmOpen){var d=$('cm');if(d)d.open=true;window.__cmOpen=0}}
 function viewProd(){
-  var h='<p class="mut">Har bir mahsulot uchun: <b>kategoriya</b>, <b>nomi</b> va hozirgi <b>soni</b>ni yozing, keyin «Saqlash» ni bosing. Kategoriya bo\'sh qolsa, yuqoridagisi olinadi. Excel\'dan nusxalab qo\'yish ham mumkin.</p><div class="row"><button class="pri" id="pSave">Saqlash</button><button id="pMore">+ Yana mahsulot</button></div>';
+  var h='<p class="mut">Avval pastdagi <b>Kategoriyalar</b> ro\'yxatida kerakli kategoriyani qo\'shing. Mahsulot qo\'shishda kategoriyani <b>ro\'yxatdan tanlang</b>, <b>nomi</b> va <b>soni</b>ni yozing, keyin «Saqlash» ni bosing. Kategoriya bo\'sh qolsa, yuqoridagisi olinadi. Excel\'dan nusxalab qo\'yish ham mumkin.</p>'+catMgr()+'<div class="row"><button class="pri" id="pSave">Saqlash</button><button id="pMore">+ Yana mahsulot</button></div>';
   h+='<table id="pt"><thead><tr><th style="width:44px">№</th><th>Kategoriya</th><th>Mahsulot nomi</th><th class="n" style="width:110px">Soni</th><th style="width:100px"></th></tr></thead><tbody>';
   S.products.slice().sort(function(a,b){return a.cat.localeCompare(b.cat)||a.name.localeCompare(b.name)}).forEach(function(p,i){
-    h+='<tr><td class="mut">'+(i+1)+'</td><td><input data-pid="'+p.id+'" data-f="cat" list="dc" value="'+esc(p.cat)+'" style="width:100%"></td><td><input data-pid="'+p.id+'" data-f="name" value="'+esc(p.name)+'" style="width:100%"></td><td class="n">'+fmt(p.qty)+'</td><td><button class="dng" data-pd="'+p.id+'">O\'chirish</button></td></tr>'});
+    h+='<tr><td class="mut">'+(i+1)+'</td><td><select data-pid="'+p.id+'" data-f="cat" style="width:100%">'+catOpts(p.cat)+'</select></td><td><input data-pid="'+p.id+'" data-f="name" value="'+esc(p.name)+'" style="width:100%"></td><td class="n">'+fmt(p.qty)+'</td><td><button class="dng" data-pd="'+p.id+'">O\'chirish</button></td></tr>'});
   h+=newRowHTML();
   return h+'</tbody></table>'+dlist()}
 function gRows(){return [].slice.call(document.querySelectorAll('#pt tr.nw'))}
 function gCell(r,c){var rows=gRows();while(r>=rows.length){document.querySelector('#pt tbody').insertAdjacentHTML('beforeend',newRowHTML());rows=gRows();bindGrid()}return rows[r].querySelector('[data-c="'+c+'"]')}
 function bindGrid(){gRows().forEach(function(tr,r){[].forEach.call(tr.querySelectorAll('.g'),function(inp){var c=+inp.dataset.c;
-  inp.onkeydown=function(e){if(e.key==='ArrowDown'||e.key==='Enter'){e.preventDefault();var n=gCell(r+1,c);n.focus();n.select()}else if(e.key==='ArrowUp'&&r>0){e.preventDefault();var n2=gCell(r-1,c);n2.focus();n2.select()}};
+  inp.onkeydown=function(e){if(e.key==='ArrowDown'||e.key==='Enter'){e.preventDefault();var n=gCell(r+1,c);n.focus();if(n.select)n.select()}else if(e.key==='ArrowUp'&&r>0){e.preventDefault();var n2=gCell(r-1,c);n2.focus();if(n2.select)n2.select()}};
   inp.onpaste=function(e){var t=(e.clipboardData||window.clipboardData).getData('text');if(t.indexOf('\t')<0&&t.indexOf('\n')<0)return;e.preventDefault();
     var lines=t.replace(/\r/g,'').split('\n');if(lines.length&&lines[lines.length-1]==='')lines.pop();
     lines.forEach(function(line,i){var cols=line.split('\t').map(function(x){return x.trim()});var c0=c;
       if(c0===0&&cols.length===2&&/^\d+$/.test(cols[1])){cols=['',cols[0],cols[1]]}
-      cols.forEach(function(v,j){if(c0+j>2)return;gCell(r+i,c0+j).value=v})})}})})}
+      cols.forEach(function(v,j){if(c0+j>2)return;setV(gCell(r+i,c0+j),v)})})}})})}
 function doSaveGrid(){
   var seen={},added=0,skipped=0,bad=0,lastCat='';
   S.products.forEach(function(p){seen[p.name.toLowerCase()]=1});
   gRows().forEach(function(tr){var v=[].map.call(tr.querySelectorAll('.g'),function(i){return i.value.trim()});tr.style.outline='';
     if(!v[0]&&!v[1]&&!v[2])return;
-    if(!v[0]&&v[1]&&lastCat){v[0]=lastCat;tr.querySelector('[data-c="0"]').value=lastCat}
+    if(!v[0]&&v[1]&&lastCat){v[0]=lastCat;setV(tr.querySelector('[data-c="0"]'),lastCat)}
     if(!v[0]||!v[1]){tr.style.outline='2px solid var(--bad)';bad++;return}
     if(v[0])lastCat=v[0];
     if(seen[v[1].toLowerCase()]){tr.style.outline='2px solid var(--warn)';skipped++;return}
-    lastCat=v[0];seen[v[1].toLowerCase()]=1;var qn=parseInt(v[2],10)||0;var p={id:uid(),name:v[1],cat:v[0],qty:0};S.products.push(p);
+    lastCat=v[0];seen[v[1].toLowerCase()]=1;var qn=parseInt(v[2],10)||0;var p={id:uid(),name:v[1],cat:v[0],qty:0};S.products.push(p);if(S.cats.indexOf(v[0])<0)S.cats.push(v[0]);
     if(qn>0){p.qty=qn;addLog('Kirim',p,qn,'Boshlang\'ich qoldiq',today(),0,qn)}added++;tr.dataset.done='1'});
   if(added)save();
-  if(bad||skipped){toast((added?added+' ta saqlandi. ':'')+(bad?bad+' qatorda kategoriya/nom yo\'q. ':'')+(skipped?skipped+' tasi takror (o\'tkazildi)':''));if(added){var keep=gRows().filter(function(t){return !t.dataset.done&&t.style.outline}).map(function(t){return [].map.call(t.querySelectorAll('.g'),function(i){return i.value})});render();keep.forEach(function(v,i){v.forEach(function(x,j){gCell(i,j).value=x})})}}
+  if(bad||skipped){toast((added?added+' ta saqlandi. ':'')+(bad?bad+' qatorda kategoriya/nom yo\'q. ':'')+(skipped?skipped+' tasi takror (o\'tkazildi)':''));if(added){var keep=gRows().filter(function(t){return !t.dataset.done&&t.style.outline}).map(function(t){return [].map.call(t.querySelectorAll('.g'),function(i){return i.value})});render();keep.forEach(function(v,i){v.forEach(function(x,j){setV(gCell(i,j),x)})})}}
   else{toast(added?added+' ta mahsulot saqlandi':'Kiritilgan qator yo\'q');render()}}
-function xrow(k){return '<tr class="xr"><td><input class="xg" data-c="0" list="dn" autocomplete="off" placeholder="Mahsulot nomi"></td><td class="n"><input class="xg cnt" data-c="1" type="number" inputmode="numeric" min="1" placeholder="Soni"></td><td><input class="xg" data-c="2" list="dc" autocomplete="off" placeholder="Kategoriya"></td></tr>'}
+function xrow(k){return '<tr class="xr"><td><input class="xg" data-c="0" list="dn" autocomplete="off" placeholder="Mahsulot nomi"></td><td class="n"><input class="xg cnt" data-c="1" type="number" inputmode="numeric" min="1" placeholder="Soni"></td><td><select class="xg" data-c="2" style="width:100%">'+catOpts('','Kategoriya')+'</select></td></tr>'}
 function xview(k){
   var pl=k==='out'?S.products.filter(function(p){return p.qty>0}):S.products;
   var sup={};S.log.forEach(function(l){if(l.type===(k==='in'?'Kirim':'Chiqim')&&l.note)sup[l.note]=(sup[l.note]||0)+1});S.nm[k].forEach(function(n){if(!sup[n])sup[n]=0});var chips=Object.keys(sup).sort(function(x,y){return sup[y]-sup[x]}).slice(0,20).map(function(n){return '<button type="button" class="chip" data-sn="'+esc(n)+'">'+esc(n)+'</button>'}).join('')+'<button type="button" class="chip chn" id="xNew">+ Yangi</button>';var dl='<datalist id="ds">'+Object.keys(sup).map(function(n){return '<option value="'+esc(n)+'">'}).join('')+'</datalist><datalist id="dn">'+pl.map(function(p){return '<option value="'+esc(p.name)+'">'}).join('')+'</datalist><datalist id="dc">'+cats().map(function(c){return '<option value="'+esc(c)+'">'}).join('')+'</datalist>';
@@ -266,7 +283,7 @@ function doIn(){
     plan.push({p:p,qt:qt})});
   if(!rows.length){toast('Kiritilgan qator yo\'q');return}
   if(bad){toast(bad+' qatorda nom, son yoki (yangi mahsulotda) kategoriya yo\'q');return}
-  plan.forEach(function(o){var p=o.p;if(p._new){delete p._new;S.products.push(p)}var b=p.qty;p.qty+=o.qt;addLog('Kirim',p,o.qt,($('xX')?$('xX').value.trim():''),d,b,p.qty)});
+  plan.forEach(function(o){var p=o.p;if(p._new){delete p._new;S.products.push(p);if(S.cats.indexOf(p.cat)<0)S.cats.push(p.cat)}var b=p.qty;p.qty+=o.qt;addLog('Kirim',p,o.qt,($('xX')?$('xX').value.trim():''),d,b,p.qty)});
   save();toast('Kirim saqlandi: '+plan.length+' qator');render()}
 function doOut(){
   var d=$('xD').value||today(),rows=xread(),bad=0,plan=[],used={};
@@ -316,7 +333,7 @@ function render(){nav();var m=$('main');
   pbar();
   if(tab==='pray')bindPray(m);
   if(tab==='sheet')bindSheet();
-  if(tab==='prod'){$('pSave').onclick=doSaveGrid;$('pMore').onclick=function(){document.querySelector('#pt tbody').insertAdjacentHTML('beforeend',newRowHTML());bindGrid();var rs=gRows();rs[rs.length-1].querySelector('input').focus()};bindGrid();
+  if(tab==='prod'){bindCats(m);$('pSave').onclick=doSaveGrid;$('pMore').onclick=function(){document.querySelector('#pt tbody').insertAdjacentHTML('beforeend',newRowHTML());bindGrid();var rs=gRows();rs[rs.length-1].querySelector('input').focus()};bindGrid();
     [].forEach.call(m.querySelectorAll('[data-f]'),function(i){i.onchange=function(){var p=find(i.dataset.pid),v=i.value.trim();if(!p||!v){render();return}
       if(i.dataset.f==='name'&&S.products.some(function(x){return x!==p&&x.name.toLowerCase()===v.toLowerCase()})){toast('Bunday nom bor');render();return}
       p[i.dataset.f]=v;save();toast('Saqlandi')}});
