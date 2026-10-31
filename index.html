@@ -348,6 +348,8 @@ function xbind(k){
 function xread(){return xrows().map(function(tr){var v=[].map.call(tr.querySelectorAll('.xg'),function(i){return i.value.trim()});tr.style.outline='';return {tr:tr,n:v[0],q:v[1],x:v[2]}}).filter(function(o){return o.n||o.q||o.x})}
 function doIn(){
   var d=$('xD').value||today(),rows=xread(),bad=0,plan=[],newp={};
+  if(!($('xX')&&$('xX').value.trim())){toast('Ta\'minotchi (kimdan) ismini yozing');var xe=$('xX');if(xe){xe.style.outline='2px solid var(--bad)';xe.focus();xe.oninput=function(){xe.style.outline=''}}return}
+
   rows.forEach(function(o){var qt=parseInt(o.q,10),key=o.n.toLowerCase();
     var p=S.products.filter(function(x){return x.name.toLowerCase()===key})[0]||newp[key];
     if(!o.n||!(qt>0)||(!p&&!o.x)){o.tr.style.outline='2px solid var(--bad)';bad++;return}
@@ -359,6 +361,8 @@ function doIn(){
   save();toast('Kirim saqlandi: '+plan.length+' qator');render()}
 function doOut(){
   var d=$('xD').value||today(),rows=xread(),bad=0,plan=[],used={};
+  if(!($('xX')&&$('xX').value.trim())){toast('Kimga chiqqanini yozing');var xe=$('xX');if(xe){xe.style.outline='2px solid var(--bad)';xe.focus();xe.oninput=function(){xe.style.outline=''}}return}
+
   rows.forEach(function(o){var qt=parseInt(o.q,10),p=S.products.filter(function(x){return x.name.toLowerCase()===o.n.toLowerCase()})[0];
     if(!p||!(qt>0)){o.tr.style.outline='2px solid var(--bad)';bad++;return}
     used[p.id]=(used[p.id]||0)+qt;if(used[p.id]>p.qty){o.tr.style.outline='2px solid var(--warn)';bad++;toast('«'+p.name+'»: omborda atigi '+p.qty+' dona bor');return}
