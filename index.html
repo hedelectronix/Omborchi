@@ -201,7 +201,7 @@ function fmt(n){return Number(n).toLocaleString('ru-RU')}
 function toast(t){var e=$('toast');e.textContent=t;e.style.display='block';setTimeout(function(){e.style.display='none'},2200)}
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
 function find(id){return S.products.filter(function(p){return p.id===id})[0]}
-function addLog(type,p,qty,note,date,before,after){S.log.unshift({id:uid(),type:type,pid:p.id,name:p.name,cat:p.cat,qty:qty,note:note||'',date:date||today(),before:before,after:after,ts:Date.now()})}
+function addLog(type,p,qty,note,date,before,after){S.log.unshift({id:uid(),type:type,pid:p.id,name:p.name,cat:p.cat,qty:qty,note:note||'',date:date||today(),before:before,after:after,ts:Date.now(),by:myEmail()})}
 function confirmBox(text,yes){$('mText').textContent=text;$('modal').classList.add('show');$('mYes').onclick=function(){$('modal').classList.remove('show');yes()};$('mNo').onclick=function(){$('modal').classList.remove('show')}}
 
 function viewHome(){var T={count:'Sanoq',in:'Kirim',out:'Chiqim',stock:'Qoldiq',prod:'Mahsulotlar',pray:'Namoz',log:'Tarix',sheet:'Google Sheets'},sub={count:'Bugungi ostatkani kiriting',in:'Tovar keldi',out:'Tovar chiqdi',stock:'Hozirgi qoldiq ro\'yxati',prod:'Mahsulot qo\'shish',pray:'Peshin, asr, shom',log:'Oxirgi harakatlar',sheet:'Har kuni 20:00 hisobot'};
@@ -391,8 +391,9 @@ function doCount(){var xx=document.querySelector('.cinx');if(xx&&xx.value!==''&&
 
 function viewLog(){
   if(!S.log.length)return '<p class="mut">Tarix bo\'sh.</p>';
-  var h='<table><tr><th>Sana</th><th>Tur</th><th>Mahsulot</th><th class="n">Soni</th><th class="hide-s">Izoh</th><th></th></tr>';
-  S.log.slice(0,300).forEach(function(l){h+='<tr><td>'+esc(l.date)+'<br><small class="mut">'+tm(l.ts)+'</small></td><td>'+esc(l.type)+'</td><td>'+esc(l.name)+'</td><td class="n '+(l.type==='Chiqim'||l.qty<0?'bad':'ok')+'">'+(l.type==='Chiqim'?'−':(l.qty>0?'+':''))+l.qty+'</td><td class="hide-s mut">'+esc(l.note)+'</td><td><button class="dng" data-del="'+l.id+'">Bekor</button></td></tr>'});
+  var h='<table><tr><th>Sana</th><th>Tur</th><th>Mahsulot / kim bilan</th><th class="n">Soni</th><th></th></tr>';
+  S.log.slice(0,300).forEach(function(l){var who=l.by?String(l.by).split('@')[0]:'';var cp=l.note?('<br><small>'+(l.type==='Kirim'?'Kimdan: ':l.type==='Chiqim'?'Kimga: ':'')+'<b>'+esc(l.note)+'</b></small>'):'';
+    h+='<tr><td>'+esc(l.date)+'<br><small class="mut">'+tm(l.ts)+(who?' · '+esc(who):'')+'</small></td><td>'+esc(l.type)+'</td><td>'+esc(l.name)+cp+'</td><td class="n '+(l.type==='Chiqim'||l.qty<0?'bad':'ok')+'">'+(l.type==='Chiqim'?'\u2212':(l.qty>0?'+':''))+l.qty+'</td><td><button class="dng" data-del="'+l.id+'">Bekor</button></td></tr>'});
   return h+'</table>'}
 function undo(id){var l=S.log.filter(function(x){return x.id===id})[0];if(!l)return;var p=find(l.pid);
   confirmBox('Rostdan o\'chirasizmi? Bu yozuv bekor qilinadi va qoldiq qaytariladi.',function(){
