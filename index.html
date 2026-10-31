@@ -397,8 +397,17 @@ function viewLog(){
   if(!S.log.length)return '<p class="mut">Tarix bo\'sh.</p>';
   var h='<table><tr><th>Sana</th><th>Tur</th><th>Mahsulot / kim bilan</th><th class="n">Soni</th><th></th></tr>';
   S.log.slice(0,300).forEach(function(l){var who=l.by?String(l.by).split('@')[0]:'';var cp=l.note?('<br><small>'+(l.type==='Kirim'?'Kimdan: ':l.type==='Chiqim'?'Kimga: ':'')+'<b>'+esc(l.note)+'</b></small>'):'';
-    h+='<tr><td>'+esc(l.date)+'<br><small class="mut">'+tm(l.ts)+(who?' · '+esc(who):'')+'</small></td><td>'+esc(l.type)+'</td><td>'+esc(l.name)+cp+'</td><td class="n '+(l.type==='Chiqim'||l.qty<0?'bad':'ok')+'">'+(l.type==='Chiqim'?'\u2212':(l.qty>0?'+':''))+l.qty+'</td><td><button class="dng" data-del="'+l.id+'">Bekor</button></td></tr>'});
+    h+='<tr><td>'+esc(l.date)+'<br><small class="mut">'+tm(l.ts)+(who?' · '+esc(who):'')+'</small></td><td>'+esc(l.type)+'</td><td>'+esc(l.name)+cp+'</td><td class="n '+(l.type==='Chiqim'||l.qty<0?'bad':'ok')+'">'+(l.type==='Chiqim'?'\u2212':(l.qty>0?'+':''))+l.qty+'</td><td style="white-space:nowrap"><button data-ed="'+l.id+'" type="button">Tahrir</button> <button class="dng" data-del="'+l.id+'">Bekor</button></td></tr>'});
   return h+'</table>'}
+function editNote(id){var l=S.log.filter(function(x){return x.id===id})[0];if(!l)return;var kd=l.type==='Kirim'?'Kimdan (ta\'minotchi)':l.type==='Chiqim'?'Kimga':'Izoh';
+  var names={};S.log.forEach(function(x){if(x.type===l.type&&x.note)names[x.note]=1});(S.nm[l.type==='Kirim'?'in':'out']||[]).forEach(function(n){names[n]=1});
+  var m=$('edM');if(m)m.remove();m=document.createElement('div');m.id='edM';m.className='modal show';m.style.zIndex=9000;
+  m.innerHTML='<div class="box"><h3 style="margin:0 0 4px">Yozuvni tahrirlash</h3><p class="mut" style="margin:0 0 10px;font-size:13px">'+esc(l.type)+' · '+esc(l.name)+' · '+esc(l.date)+'</p><label class="mut" style="font-size:12px;display:block;margin-bottom:4px">'+kd+'</label><input id="edI" autocomplete="off" list="edL" style="width:100%" value="'+esc(l.note||'')+'"><datalist id="edL">'+Object.keys(names).map(function(n){return '<option value="'+esc(n)+'">'}).join('')+'</datalist><p id="edS" style="color:var(--bad);font-size:12px;margin:6px 0 0"></p><div class="btns"><button id="edX" type="button">Bekor qilish</button><button class="pri" id="edOk" type="button">Saqlash</button></div></div>';
+  document.body.appendChild(m);var inp=$('edI');inp.focus();inp.select();
+  function close(){m.remove()}
+  function ok(){var v=inp.value.trim();if(!v&&(l.type==='Kirim'||l.type==='Chiqim')){$('edS').textContent=l.type==='Kirim'?'Ta\'minotchi ismini yozing':'Kimga chiqqanini yozing';return}
+    l.note=v;if(v&&S.nm){var k=l.type==='Kirim'?'in':l.type==='Chiqim'?'out':'';if(k&&S.nm[k]&&S.nm[k].indexOf(v)<0)S.nm[k].push(v)}save();close();toast('Saqlandi');render()}
+  $('edX').onclick=close;$('edOk').onclick=ok;m.onclick=function(e){if(e.target===m)close()};inp.onkeydown=function(e){if(e.key==='Enter'){e.preventDefault();ok()}else if(e.key==='Escape')close()}}
 function undo(id){var l=S.log.filter(function(x){return x.id===id})[0];if(!l)return;var p=find(l.pid);
   confirmBox('Rostdan o\'chirasizmi? Bu yozuv bekor qilinadi va qoldiq qaytariladi.',function(){
     if(p){var delta=(l.type==='Chiqim')?l.qty:-l.qty;if(p.qty+delta<0){toast('Qoldiq manfiy bo\'lib qoladi — bekor qilib bo\'lmaydi');return}p.qty+=delta}
@@ -427,7 +436,7 @@ function render(){sgHide();nav();var m=$('main');
     var xx=m.querySelector('.cinx');if(xx)xx.onfocus=function(){toast('Avval «Mahsulotlar» yoki «Kirim» bo\'limida mahsulot qo\'shing')};
     var cd=$('cD');if(cd)cd.onchange=function(){countDate=cd.value};
     var g=$('cGo');if(g){g.onclick=doCount;$('cClr').onclick=function(){counts={};render()}}}
-  if(tab==='log'){[].forEach.call(m.querySelectorAll('[data-del]'),function(b){b.onclick=function(){undo(b.dataset.del)}})}}
+  if(tab==='log'){[].forEach.call(m.querySelectorAll('[data-del]'),function(b){b.onclick=function(){undo(b.dataset.del)}});[].forEach.call(m.querySelectorAll('[data-ed]'),function(b){b.onclick=function(){editNote(b.dataset.ed)}})}}
 
 $('bTheme').onclick=function(){document.body.classList.toggle('dark');try{localStorage.setItem(KEY+'_theme',document.body.classList.contains('dark')?'d':'l')}catch(e){}};
 var DL=null;
