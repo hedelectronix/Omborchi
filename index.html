@@ -250,7 +250,36 @@ function doSaveGrid(){
   if(added)save();
   if(bad||skipped){toast((added?added+' ta saqlandi. ':'')+(bad?bad+' qatorda kategoriya/nom yo\'q. ':'')+(skipped?skipped+' tasi takror (o\'tkazildi)':''));if(added){var keep=gRows().filter(function(t){return !t.dataset.done&&t.style.outline}).map(function(t){return [].map.call(t.querySelectorAll('.g'),function(i){return i.value})});render();keep.forEach(function(v,i){v.forEach(function(x,j){setV(gCell(i,j),x)})})}}
   else{toast(added?added+' ta mahsulot saqlandi':'Kiritilgan qator yo\'q');render()}}
-function xrow(k){return '<tr class="xr"><td><input class="xg" data-c="0" list="dn" autocomplete="off" placeholder="Mahsulot nomi"></td><td class="n"><input class="xg cnt" data-c="1" type="number" inputmode="numeric" min="1" placeholder="Soni"></td><td><select class="xg" data-c="2" style="width:100%">'+catOpts('','Kategoriya')+'</select></td></tr>'}
+var SG={el:null,items:[],idx:-1,inp:null,tr:null,k:''};
+function nrm(s){return String(s).toLowerCase().replace(/[^a-z0-9а-яё]+/g,'')}
+function bgm(s){s=nrm(s);var a={};for(var i=0;i<s.length-1;i++)a[s.substr(i,2)]=1;return a}
+function dice(a,b){var A=bgm(a),B=bgm(b),n=0,na=0,nb=0,k;for(k in A){na++;if(B[k])n++}for(k in B)nb++;return na+nb?2*n/(na+nb):0}
+function sgFind(q,k){q=q.trim();if(!q)return [];var pl=S.products.filter(function(p){return k==='out'?p.qty>0:true});
+  var toks=q.toLowerCase().split(/\s+/).filter(Boolean),nq=nrm(q),res=[];
+  pl.forEach(function(p){var n=p.name.toLowerCase(),nn=nrm(p.name),sc=0;
+    if(toks.every(function(t){return n.indexOf(t)>=0})||(nq&&nn.indexOf(nq)>=0)){sc=2+(n.indexOf(toks[0])===0?1:0)}
+    else{var words=n.split(/[^a-z0-9а-яё]+/).filter(Boolean),tot=0,ok=true;toks.forEach(function(t){var best=n.indexOf(t)>=0?1:0;if(!best)words.forEach(function(w){var d=t.length>=3?dice(t,w):0;if(d>best)best=d});if(best<0.5)ok=false;tot+=best});if(ok&&toks.length)sc=tot/toks.length}
+    if(sc>0)res.push({p:p,sc:sc})});
+  res.sort(function(a,b){return b.sc-a.sc||a.p.name.localeCompare(b.p.name)});return res.slice(0,8).map(function(x){return x.p})}
+function sgHide(){if(SG.el){SG.el.remove();SG.el=null}SG.items=[];SG.idx=-1}
+function sgPaint(){if(!SG.el)return;[].forEach.call(SG.el.children,function(d,i){d.style.background=i===SG.idx?'var(--ac)':'';d.style.color=i===SG.idx?'#fff':''})}
+function sgPick(i){var p=SG.items[i],inp=SG.inp,tr=SG.tr;if(!p)return;inp.value=p.name;var ci=tr.querySelector('[data-c="2"]');if(ci)setV(ci,p.cat);sgHide();var q=tr.querySelector('[data-c="1"]');if(q)q.focus()}
+function sgShow(inp,tr,k){var it=sgFind(inp.value,k);
+  if(!it.length||(it.length===1&&it[0].name.toLowerCase()===inp.value.trim().toLowerCase())){sgHide();return}
+  SG.items=it;SG.idx=-1;SG.inp=inp;SG.tr=tr;SG.k=k;
+  if(!SG.el){SG.el=document.createElement('div');SG.el.style.cssText='position:fixed;z-index:9000;background:var(--bg);color:var(--tx);border:1px solid var(--bd);border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,.2);overflow:auto;max-height:40vh';document.body.appendChild(SG.el)}
+  SG.el.innerHTML=it.map(function(p,i){return '<div data-i="'+i+'" style="padding:10px 12px;border-bottom:1px solid var(--bd);cursor:pointer"><b>'+esc(p.name)+'</b> <small style="opacity:.75">· '+esc(p.cat)+' · qoldiq '+fmt(p.qty)+'</small></div>'}).join('');
+  [].forEach.call(SG.el.children,function(d){d.onpointerdown=function(e){e.preventDefault();sgPick(+d.dataset.i)}});
+  var r=inp.getBoundingClientRect(),w=Math.min(window.innerWidth-16,Math.max(r.width,280));
+  SG.el.style.width=w+'px';SG.el.style.left=Math.max(8,Math.min(r.left,window.innerWidth-w-8))+'px';
+  var h=SG.el.offsetHeight;SG.el.style.top=(r.bottom+h>window.innerHeight&&r.top>h?r.top-h-2:r.bottom+2)+'px';sgPaint()}
+function sgKey(e){if(!SG.el||!SG.items.length)return false;var n=SG.items.length;
+  if(e.key==='ArrowDown'){e.preventDefault();SG.idx=(SG.idx+1)%n;sgPaint();return true}
+  if(e.key==='ArrowUp'){e.preventDefault();SG.idx=(SG.idx-1+n)%n;sgPaint();return true}
+  if(e.key==='Enter'&&SG.idx>=0){e.preventDefault();sgPick(SG.idx);return true}
+  if(e.key==='Escape'){sgHide();return true}return false}
+window.addEventListener('scroll',function(){sgHide()},true);
+function xrow(k){return '<tr class="xr"><td><input class="xg" data-c="0" autocomplete="off" autocapitalize="off" placeholder="Mahsulot nomi"></td><td class="n"><input class="xg cnt" data-c="1" type="number" inputmode="numeric" min="1" placeholder="Soni"></td><td><select class="xg" data-c="2" style="width:100%">'+catOpts('','Kategoriya')+'</select></td></tr>'}
 function xview(k){
   var pl=k==='out'?S.products.filter(function(p){return p.qty>0}):S.products;
   var sup={};S.log.forEach(function(l){if(l.type===(k==='in'?'Kirim':'Chiqim')&&l.note)sup[l.note]=(sup[l.note]||0)+1});S.nm[k].forEach(function(n){if(!sup[n])sup[n]=0});var chips=Object.keys(sup).sort(function(x,y){return sup[y]-sup[x]}).slice(0,20).map(function(n){return '<button type="button" class="chip" data-sn="'+esc(n)+'">'+esc(n)+'</button>'}).join('')+'<button type="button" class="chip chn" id="xNew">+ Yangi</button>';var dl='<datalist id="ds">'+Object.keys(sup).map(function(n){return '<option value="'+esc(n)+'">'}).join('')+'</datalist><datalist id="dn">'+pl.map(function(p){return '<option value="'+esc(p.name)+'">'}).join('')+'</datalist><datalist id="dc">'+cats().map(function(c){return '<option value="'+esc(c)+'">'}).join('')+'</datalist>';
@@ -264,8 +293,8 @@ function viewOut(){return xview('out')}
 function xrows(){return [].slice.call(document.querySelectorAll('#xt tr.xr'))}
 function xbind(k){
   function bind(){xrows().forEach(function(tr,r){[].forEach.call(tr.querySelectorAll('.xg'),function(inp){var c=+inp.dataset.c;
-    inp.onkeydown=function(e){if(e.key==='Enter'||e.key==='ArrowDown'){e.preventDefault();var rs=xrows();if(!rs[r+1]){$('xMore').click();rs=xrows()}var n=rs[r+1].querySelector('[data-c="'+c+'"]');n.focus();if(n.select)n.select()}else if(e.key==='ArrowUp'&&r>0){e.preventDefault();var n2=xrows()[r-1].querySelector('[data-c="'+c+'"]');n2.focus()}};
-    if(c===0)inp.oninput=function(){var p=S.products.filter(function(x){return x.name.toLowerCase()===inp.value.trim().toLowerCase()})[0];var ci=tr.querySelector('[data-c="2"]');if(p)ci.value=p.cat}})})}
+    inp.onkeydown=function(e){if(c===0&&sgKey(e))return;if(e.key==='Enter'||e.key==='ArrowDown'){e.preventDefault();var rs=xrows();if(!rs[r+1]){$('xMore').click();rs=xrows()}var n=rs[r+1].querySelector('[data-c="'+c+'"]');n.focus();if(n.select)n.select()}else if(e.key==='ArrowUp'&&r>0){e.preventDefault();var n2=xrows()[r-1].querySelector('[data-c="'+c+'"]');n2.focus()}};
+    if(c===0){inp.oninput=function(){var p=S.products.filter(function(x){return x.name.toLowerCase()===inp.value.trim().toLowerCase()})[0];var ci=tr.querySelector('[data-c="2"]');if(p&&ci)setV(ci,p.cat);sgShow(inp,tr,k)};inp.onfocus=function(){if(inp.value)sgShow(inp,tr,k)};inp.onblur=function(){setTimeout(sgHide,160)}}})})}
   bind();
   $('xMore').onclick=function(){document.querySelector('#xt tbody').insertAdjacentHTML('beforeend',xrow(k));bind()};
   [].forEach.call(document.querySelectorAll('.chip[data-sn]'),function(c){c.onclick=function(){$('xX').value=c.dataset.sn}});
@@ -327,7 +356,7 @@ function undo(id){var l=S.log.filter(function(x){return x.id===id})[0];if(!l)ret
     if(p){var delta=(l.type==='Chiqim')?l.qty:-l.qty;if(p.qty+delta<0){toast('Qoldiq manfiy bo\'lib qoladi — bekor qilib bo\'lmaydi');return}p.qty+=delta}
     S.log=S.log.filter(function(x){return x.id!==id});save();render()})}
 
-function render(){nav();var m=$('main');
+function render(){sgHide();nav();var m=$('main');
   m.innerHTML={home:viewHome,stock:viewStock,prod:viewProd,in:viewIn,out:viewOut,count:viewCount,log:viewLog,pray:viewPray,sheet:viewSheet}[tab]();
   if(tab!=='home'){m.insertAdjacentHTML('afterbegin','<button id="bk" class="back">‹ Menyu</button>');$('bk').onclick=function(){tab='home';render()}}else{[].forEach.call(m.querySelectorAll('.tile'),function(b){b.onclick=function(){tab=b.dataset.t;render()}})}
   pbar();
