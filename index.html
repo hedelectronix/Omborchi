@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="uz"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="theme-color" content="#f6f8fa">
+<html lang="uz"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="theme-color" content="#f6f8fa"><link rel="manifest" href="omborchi.webmanifest"><link rel="apple-touch-icon" href="ob-apple-touch-icon.png"><link rel="icon" type="image/png" href="ob-icon-192.png">
 <title>Omborchi hisobi</title>
 
 <style>
@@ -541,6 +541,7 @@ function viewReq(){var P=rqPending(),D=(RQ||[]).filter(function(r){return r.stat
   return (P.length?tbl(P,0):'<p class="mut">Yangi buyurtma yo\'q. Sotuvchi Hed buyurtmadan ombordagi tovarni buyurtma qilsa, shu yerda chiqadi.</p>')+(D.length?(n=0,'<h3 style="margin:18px 0 8px">Oxirgi bajarilganlar</h3>'+tbl(D,1)):'')}
 function bindReq(){[].forEach.call(document.querySelectorAll('[data-rd]'),function(b){b.onclick=function(){b.disabled=true;post({a:'reqdone',t:TOK,id:b.dataset.rd}).then(function(j){if(j.err==='auth'){authFail();return}if(j.ok&&j.list){RQ=j.list;rqBadge();render();toast('Tayyor deb belgilandi')}else{b.disabled=false;toast('Saqlanmadi',1)}}).catch(function(){b.disabled=false;toast('Aloqa xatosi',1)})}})}
 setInterval(function(){if(document.visibilityState==='visible')rqPoll()},20000);document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible')rqPoll()});setTimeout(rqPoll,2000);
+if('serviceWorker' in navigator&&window.isSecureContext)navigator.serviceWorker.register('sw.js').catch(function(){});
 if(tokOk())pull();else showGL();
 admBtn();
 })();
