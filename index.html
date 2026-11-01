@@ -530,7 +530,7 @@ function rqPending(){return (RQ||[]).filter(function(r){return r.status==='new'}
 function rqSeen(){try{return JSON.parse(localStorage.getItem(KEY+'_rqs')||'[]')}catch(e){return []}}
 var AC=null;
 function acGet(){try{var C=window.AudioContext||window.webkitAudioContext;if(!C)return null;if(!AC)AC=new C();return AC}catch(e){return null}}
-function acUnlock(){var c=acGet();if(c&&c.state!=='running'){try{c.resume()}catch(e){}}rqSndBar()}
+function acUnlock(){var c=acGet();if(c&&c.state!=='running'){try{var p=c.resume();if(p&&p.then)p.then(rqSndBar)}catch(e){}}rqSndBar();setTimeout(rqSndBar,400)}
 ['pointerdown','keydown','touchstart'].forEach(function(ev){document.addEventListener(ev,acUnlock,{passive:true})});
 function rqSndBar(){var c=AC,bar=document.getElementById('sndBar'),need=rqPending().length&&(!c||c.state!=='running');
   if(need&&!bar){bar=document.createElement('div');bar.id='sndBar';bar.textContent='Ovoz o\'chiq — yoqish uchun shu yerni bosing';bar.style.cssText='position:fixed;left:0;right:0;top:0;z-index:99999;background:#cf222e;color:#fff;text-align:center;padding:12px;font-weight:700;font-size:16px;cursor:pointer';bar.onclick=function(){acUnlock();rqBeep()};document.body.appendChild(bar)}
