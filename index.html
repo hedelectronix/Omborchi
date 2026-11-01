@@ -394,10 +394,12 @@ function doCount(){var xx=document.querySelector('.cinx');if(xx&&xx.value!==''&&
   p.qty=v;addLog('Tuzatish',p,v-b,'Sanoq',d,b,v);n++});
   counts={};countDate=null;save();toast(m?m+' ta mahsulot sanaldi, '+n+' tasida farq bor':'Hech narsa kiritilmadi');render()}
 
+var LOGALL=false;
 function viewLog(){
   if(!S.log.length)return '<p class="mut">Tarix bo\'sh.</p>';
-  var h='<table><tr><th>Sana</th><th>Tur</th><th>Mahsulot / kim bilan</th><th class="n">Soni</th><th></th></tr>';
-  S.log.slice(0,300).forEach(function(l){var who=l.by?String(l.by).split('@')[0]:'';var cp=l.note?('<br><small>'+(l.type==='Kirim'?'Kimdan: ':l.type==='Chiqim'?'Kimga: ':'')+'<b>'+esc(l.note)+'</b></small>'):'';
+  var L=S.log.filter(function(l){return LOGALL||!(l.type==='Sanoq'&&!l.qty)}),hid=S.log.length-L.length;
+  var h='<div style="margin:0 0 8px"><button type="button" id="lgAll">'+(LOGALL?'Farqsiz sanoqlarni yashirish':'Farqsiz sanoqlarni ko\'rsatish ('+hid+')')+'</button></div>'+(L.length?'':'<p class="mut">Kirim yoki chiqim hali yo\'q. Farqsiz sanoqlar yashirilgan.</p>')+'<table><tr><th>Sana</th><th>Tur</th><th>Mahsulot / kim bilan</th><th class="n">Soni</th><th></th></tr>';
+  L.slice(0,300).forEach(function(l){var who=l.by?String(l.by).split('@')[0]:'';var cp=l.note?('<br><small>'+(l.type==='Kirim'?'Kimdan: ':l.type==='Chiqim'?'Kimga: ':'')+'<b>'+esc(l.note)+'</b></small>'):'';
     h+='<tr><td>'+esc(l.date)+'<br><small class="mut">'+tm(l.ts)+(who?' · '+esc(who):'')+'</small></td><td>'+esc(l.type)+'</td><td>'+esc(l.name)+cp+'</td><td class="n '+(l.type==='Chiqim'||l.qty<0?'bad':'ok')+'">'+(l.type==='Chiqim'?'\u2212':(l.qty>0?'+':''))+l.qty+'</td><td style="white-space:nowrap"><button data-ed="'+l.id+'" type="button">Tahrir</button> <button class="dng" data-del="'+l.id+'">Bekor</button></td></tr>'});
   return h+'</table>'}
 function editNote(id){var l=S.log.filter(function(x){return x.id===id})[0];if(!l)return;var kd=l.type==='Kirim'?'Kimdan (ta\'minotchi)':l.type==='Chiqim'?'Kimga':'Izoh';
@@ -438,7 +440,7 @@ function render(){sgHide();nav();var m=$('main');
     var xx=m.querySelector('.cinx');if(xx)xx.onfocus=function(){toast('Avval «Mahsulotlar» yoki «Kirim» bo\'limida mahsulot qo\'shing')};
     var cd=$('cD');if(cd)cd.onchange=function(){countDate=cd.value};
     var g=$('cGo');if(g){g.onclick=doCount;$('cClr').onclick=function(){counts={};render()}}}
-  if(tab==='log'){[].forEach.call(m.querySelectorAll('[data-del]'),function(b){b.onclick=function(){undo(b.dataset.del)}});[].forEach.call(m.querySelectorAll('[data-ed]'),function(b){b.onclick=function(){editNote(b.dataset.ed)}})}}
+  if(tab==='log'){var la=document.getElementById('lgAll');if(la)la.onclick=function(){LOGALL=!LOGALL;render()};[].forEach.call(m.querySelectorAll('[data-del]'),function(b){b.onclick=function(){undo(b.dataset.del)}});[].forEach.call(m.querySelectorAll('[data-ed]'),function(b){b.onclick=function(){editNote(b.dataset.ed)}})}}
 
 $('bTheme').onclick=function(){document.body.classList.toggle('dark');try{localStorage.setItem(KEY+'_theme',document.body.classList.contains('dark')?'d':'l')}catch(e){}};
 var DL=null;
